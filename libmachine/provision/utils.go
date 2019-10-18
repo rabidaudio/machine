@@ -296,7 +296,17 @@ func DockerClientVersion(ssh SSHCommander) (string, error) {
 }
 
 func waitForLockAptGetUpdate(ssh SSHCommander) error {
-	return waitForLock(ssh, "sudo apt-get update")
+	err := waitForLock(ssh, "sudo apt-get update")
+	if err != nil {
+		if strings.Contains(err.Error(), "Writing more data than expected") {
+			cleanErr = waitForLock(ssh, "sudo apt-get clean")
+			if cleanErr != nil {
+				return err
+			}
+			return waitForLock(ssh, "sudo apt-get update")
+		}
+	}
+	return err
 }
 
 func waitForLock(ssh SSHCommander, cmd string) error {
